@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="helpers\**" />
+    <EmbeddedResource Remove="helpers\**" />
+    <None Remove="helpers\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+   
+    <PackageReference Include="System.Runtime.Caching" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\protecno.api.sync.domain\protecno.api.sync.domain.csproj" />
+  </ItemGroup>
+
+</Project>
