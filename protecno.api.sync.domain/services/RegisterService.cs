@@ -39,7 +39,7 @@ namespace protecno.api.sync.domain.services
         }
 
         public RegisterValidationResult InsertRegister(Register register, UserJwt userJwt, DateTime saveDate)
-        { 
+        {
             ValidationResult validationResult = new RegisterValidation().Validate(register);
             RegisterValidationResult registerValidationResult = _mapper.Map<RegisterValidationResult>(validationResult);
 
@@ -52,15 +52,15 @@ namespace protecno.api.sync.domain.services
             register.Id = _unitOfWork.RegisterRepository.Insert(register);
 
             registerValidationResult.RegisterObject = register;
-
-            _cacheRepository.RemoveKeysInMemoryCacheByPartKey("count");
-
+            string entityName = EnumHelper.GetEnumTitleCase<EInformationType>((EInformationType)register.InformationType);
+            
+            _cacheRepository.RemoveKeysInMemoryCacheByPartKey($"count{entityName}"); 
             return registerValidationResult;
         }
 
         public RegisterValidationResult UpdateRegister(Register originalRegister, Register updateRegister, UserJwt userJwt, DateTime saveDate)
         {
-            string registerName = EnumHelper.GetEnumTitleCase<ERegisterType>((ERegisterType)updateRegister.TipoRegistroId);
+            string registerName = EnumHelper.GetEnumTitleCase<EInformationType>((EInformationType)updateRegister.InformationType);
 
             RegisterValidationResult resultValidation = new();
             originalRegister ??= new Register();
@@ -78,7 +78,7 @@ namespace protecno.api.sync.domain.services
                                                                       (int)originalRegister.Id,
                                                                       (int)updateRegister.OrigemId,
                                                                       userJwt.UserId,
-                                                                      Enum.GetName(typeof(ERegisterType), updateRegister.TipoRegistroId),
+                                                                      Enum.GetName(typeof(EInformationType), updateRegister.InformationType),
                                                                       CommonLists.RegisterFildsToCompare.ToList());
             try
             {
@@ -116,7 +116,7 @@ namespace protecno.api.sync.domain.services
 
         public RegisterValidationResult RemoveRegister(RegisterDeleteRequest registerDeleteRequest, UserJwt userJwt, DateTime saveDate)
         {
-            string registerName = EnumHelper.GetEnumTitleCase<ERegisterType>((ERegisterType)registerDeleteRequest.TipoRegistroId);
+            string registerName = EnumHelper.GetEnumTitleCase<EInformationType>((EInformationType)registerDeleteRequest.InformationType);
 
             RegisterDeleteValidation validation = new RegisterDeleteValidation();
             ValidationResult result = validation.Validate(registerDeleteRequest);
@@ -125,20 +125,21 @@ namespace protecno.api.sync.domain.services
             if (!resultValidation.IsValid)
                 return resultValidation;
 
-            (RegisterValidationResult resultValidation2, List<Register> foundRegisters) = ValidadateRegisterToDelete(registerDeleteRequest, resultValidation, userJwt);
-            if (!resultValidation2.IsValid)
-                return resultValidation2;
+            (RegisterValidationResult resultValidationDependency, List<Register> foundRegisters) = ValidadateRegisterToDelete(registerDeleteRequest, resultValidation, userJwt);
+
+            if (!resultValidationDependency.IsValid && foundRegisters.Count == 0)
+                return resultValidationDependency;
 
             if (userJwt.StartedInventory)
             {
                 foundRegisters.ForEach(register =>
                 {
                     register.Ativo = false;
-                    register.TipoRegistroId = registerDeleteRequest.TipoRegistroId;
+                    register.InformationType = registerDeleteRequest.InformationType;
                 });
 
                 SaveListResult saveListResult = SaveRegisterList(foundRegisters, userJwt, saveDate);
-                resultValidation2.Message = $"Foram desativados {saveListResult.QuantityUpdated} registros de {registerName}";
+                resultValidationDependency.Message = $"Foram desativados {saveListResult.QuantityUpdated} registros de {registerName}";
             }
             else
             {
@@ -151,15 +152,15 @@ namespace protecno.api.sync.domain.services
                         foundRegisters.ForEach(register =>
                         {
                             register.Ativo = false;
-                            register.TipoRegistroId = registerDeleteRequest.TipoRegistroId;
+                            register.InformationType = registerDeleteRequest.InformationType;
                             _unitOfWork.RegisterRepository.Delete(register);
                         });
                     }
 
-                    resultValidation2.Message = $"Foram excluídos {foundRegisters.Count} registros de {registerName} permanentemente.";
-                                       
+                    resultValidation.Message = $"Foram excluídos {foundRegisters.Count} registros de {registerName}.";
+
                     _unitOfWork.Commit();
-                     
+
                 }
                 catch (Exception)
                 {
@@ -173,64 +174,96 @@ namespace protecno.api.sync.domain.services
             return resultValidation;
         }
 
-        private (RegisterValidationResult, List<Register>) ValidadateRegisterToDelete(RegisterDeleteRequest registerDeleteRequest, RegisterValidationResult resultValidation, UserJwt userJwt)
+        private (RegisterValidationResult, List<Register>) ValidadateRegisterToDelete(RegisterDeleteRequest registerDeleteRequest,RegisterValidationResult resultValidation,UserJwt userJwt)
         { 
-            string registerName = EnumHelper.GetEnumTitleCase<ERegisterType>((ERegisterType)registerDeleteRequest.TipoRegistroId);
+            if (registerDeleteRequest.DeleteAll)            
+                return ValidateDeleteAll(registerDeleteRequest, resultValidation, userJwt); 
+            else 
+                return ValidateDeleteList(registerDeleteRequest, resultValidation, userJwt);
+        }
 
-            var foundRegisters = new List<Register>();
+        private (RegisterValidationResult, List<Register>) ValidateDeleteList(RegisterDeleteRequest registerDeleteRequest,RegisterValidationResult resultValidation,UserJwt userJwt)
+        {
+            string registerName = EnumHelper.GetEnumTitleCase<EInformationType>((EInformationType)registerDeleteRequest.InformationType);
+
+            List<Register> listReturn = new List<Register>();
 
             var filter = new RegisterPaginateRequest()
             {
-                TipoRegistroId = (ERegisterType)registerDeleteRequest.TipoRegistroId,
-                BaseInventarioId = (int)registerDeleteRequest.BaseInventarioId
+                InformationType = (EInformationType)registerDeleteRequest.InformationType,
+                BaseInventarioId = (int)registerDeleteRequest.BaseInventoryId
             };
 
-            if (!registerDeleteRequest.DeleteAll)
-                filter.Codigo = registerDeleteRequest.Codigo;
-
-            var listFound = _registerRepository.GetList(filter);
-
-            if (!listFound.Any())
+            foreach (string code in registerDeleteRequest.RegisterCodeList.Where(x => !string.IsNullOrEmpty(x)).ToList())
             {
-                resultValidation.Errors.Add(new ValidationFailure() { ErrorMessage = $"Registros de {registerName} não encontrados." });
-                return (resultValidation, foundRegisters);
+                filter.Codigo = code;
+                List<Register> listFound = _registerRepository.GetList(filter);
+
+                if (!listFound.Any())
+                    resultValidation.Errors.Add(new ValidationFailure() { ErrorMessage = $"{registerName} código: {code} não encontrado." });
+
+                listFound.ForEach(register =>
+                {
+                    int countInventory = GetInventoryDependencesCount(register, (EInformationType)registerDeleteRequest.InformationType, (int)registerDeleteRequest.BaseInventoryId, userJwt.UserId);
+                    if (countInventory > 0)
+                        resultValidation.Errors.Add(new ValidationFailure() { ErrorMessage = $"Há {countInventory} itens de inventário que dependem de {registerName} código: '{register.Codigo}' " });
+                    else
+                        listReturn.Add(register);
+                });
             }
+
+            return (resultValidation, listReturn);
+        }
+
+        private (RegisterValidationResult, List<Register>) ValidateDeleteAll(RegisterDeleteRequest registerDeleteRequest, RegisterValidationResult resultValidation, UserJwt userJwt)
+        {
+            string registerName = EnumHelper.GetEnumTitleCase<EInformationType>((EInformationType)registerDeleteRequest.InformationType);
+            List<Register> listReturn = new List<Register>();
+
+            var filter = new RegisterPaginateRequest()
+            {
+                InformationType = (EInformationType)registerDeleteRequest.InformationType,
+                BaseInventarioId = (int)registerDeleteRequest.BaseInventoryId
+            };
+
+            List<Register> listFound = _registerRepository.GetList(filter);
 
             listFound.ForEach(register =>
             {
-                int countInventory = GetInventoryDependencesCount(register, (ERegisterType)registerDeleteRequest.TipoRegistroId, (int)registerDeleteRequest.BaseInventarioId, userJwt.UserId);
+                int countInventory = GetInventoryDependencesCount(register, (EInformationType)registerDeleteRequest.InformationType, (int)registerDeleteRequest.BaseInventoryId, userJwt.UserId);
                 if (countInventory > 0)
-                    resultValidation.Errors.Add(new ValidationFailure() { ErrorMessage = $"Há {countInventory} itens de inventário que dependem de {registerName} código: '{register.Codigo}' " });
+                    resultValidation.Errors.Add(new ValidationFailure() { ErrorMessage = $"Existe(m) {countInventory} dependendência(s) de {registerName} '{register.Codigo}' " });
+                else
+                    listReturn.Add(register);
             });
-
-            return (resultValidation, listFound);
+            return (resultValidation, listReturn);
         }
 
-        private int GetInventoryDependencesCount(Register founRegister, ERegisterType tipoRegistroId, int baseInventarioId, int userId)
+        private int GetInventoryDependencesCount(Register founRegister, EInformationType tipoRegistroId, int baseInventarioId, int userId)
         {
-            string registerName = EnumHelper.GetEnumTitleCase<ERegisterType>(tipoRegistroId);
+            string registerName = EnumHelper.GetEnumTitleCase<EInformationType>(tipoRegistroId);
 
             InventoryPaginateRequest filterObject = new();
-            
+
             switch (tipoRegistroId)
             {
-                case ERegisterType.filial:
+                case EInformationType.filial:
                     filterObject.FilialId = founRegister.Id;
                     break;
 
-                case ERegisterType.local:
+                case EInformationType.local:
                     filterObject.LocalId = founRegister.Id;
                     break;
 
-                case ERegisterType.responsavel:
+                case EInformationType.responsavel:
                     filterObject.ResponsavelId = founRegister.Id;
                     break;
 
-                case ERegisterType.centrocusto:
+                case EInformationType.centrocusto:
                     filterObject.CentroCustoId = founRegister.Id;
                     break;
 
-                case ERegisterType.contacontabil:
+                case EInformationType.contacontabil:
                     filterObject.ContaContabilId = founRegister.Id;
                     break;
             }
@@ -240,10 +273,8 @@ namespace protecno.api.sync.domain.services
             string sqlFilter = string.Empty;
             DynamicParameters dbArgs;
             FiltersExtentions<InventoryPaginateRequest>.FilterBuilder(filterObject, CommonLists.BlackListFilterBuilderRegister.ToList(), out dbArgs, out sqlFilter);
-
-            // This query will leave here and go to the Repository Service
-            string queryCount = $@"SELECT COUNT(*) FROM db_protecno.inventario T {sqlFilter}  ";
-            var count = _countRepository.GetCountItensAsync(queryCount, dbArgs, filterObject.ToJsonString(), userId, $"count{registerName}").Result;
+             
+            var count = _countRepository.GetCountItensAsync("inventario", sqlFilter, dbArgs, filterObject.ToJsonString(), userId).Result;
 
             return count;
         }
@@ -290,7 +321,7 @@ namespace protecno.api.sync.domain.services
                     var registerList = _registerRepository.GetList(new RegisterPaginateRequest()
                     {
                         Ativo = null,
-                        TipoRegistroId = register.TipoRegistroId,
+                        InformationType = register.InformationType,
                         Codigo = register.Codigo,
                         BaseInventarioId = register.BaseInventarioId
                     });
@@ -330,11 +361,11 @@ namespace protecno.api.sync.domain.services
 
         private ProcessSave<Register> InsertList(ProcessSave<Register> processSave, UserJwt userJwt, DateTime saveDate)
         {
-            foreach (Register Register in processSave.ListNewItens)
+            foreach (Register register in processSave.ListNewItens)
             {
                 ValidationResult result = new();
 
-                var resultInsert = InsertRegister(Register, userJwt, saveDate);
+                var resultInsert = InsertRegister(register, userJwt, saveDate);
                 result.Errors.AddRange(resultInsert.Errors);
 
                 if (result.IsValid)
@@ -365,16 +396,14 @@ namespace protecno.api.sync.domain.services
         }
 
         private async Task<int> GetCountAsync(RegisterPaginateRequest registerRequest, string sqlFilter, DynamicParameters dbArgs, int userId)
-        {
-            string registerName = Enum.GetName(typeof(ERegisterType), registerRequest.TipoRegistroId);
-
-            //This query will leave here and go to the Repository Service
-            string queryCount = $@" SELECT COUNT(*) FROM db_protecno.{registerName} T {sqlFilter}";
+        { 
+            string entity = EnumHelper.GetEnumTitleCase<EInformationType>((EInformationType)registerRequest.InformationType);
+              
             var registerRequestClone = registerRequest.Clone<RegisterPaginateRequest>();
             registerRequestClone.Page = 0;
             registerRequestClone.PageSize = 0;
 
-            return await _countRepository.GetCountItensAsync(queryCount, dbArgs, registerRequestClone.ToJsonString(), userId, $"count{registerName}");
+            return await _countRepository.GetCountItensAsync(entity, sqlFilter, dbArgs, registerRequestClone.ToJsonString(), userId);
         }
 
         #endregion

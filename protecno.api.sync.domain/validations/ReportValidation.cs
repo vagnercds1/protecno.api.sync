@@ -12,7 +12,7 @@ namespace protecno.api.sync.domain.validations
             RuleFor(x => x).Cascade(CascadeMode.Stop).Must(x => Enum.IsDefined(typeof(EReportType), x.ReportType)).WithMessage("ReportType precisa estar entre 1 e 22")
                                                      .Must(x => x.BaseInventarioId > 0).WithMessage("Informe o BaseInventoryId"); 
 
-            RuleFor(x => x).Cascade(CascadeMode.Stop).Must(x =>  x.TipoInventarioId !=null).WithMessage("Informe TipoInventarioId")
+            RuleFor(x => x).Cascade(CascadeMode.Stop).Must(x =>  x.InformatioType !=null).WithMessage("Informe TipoInventarioId")
                                                      .When(x => (x.ReportType == EReportType.InventarioFisicoCSV) || (x.ReportType == EReportType.InventarioFisicoPDF) || (x.ReportType == EReportType.InventarioFotosPDF));
         }
     }

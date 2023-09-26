@@ -8,6 +8,6 @@ namespace protecno.api.sync.domain.models.register
         
         public int? RegisterId { get; set; }
 
-        public ERegisterType? TipoRegistroId { get; set; }
+        public EInformationType? InformationType { get; set; }
     }
 }

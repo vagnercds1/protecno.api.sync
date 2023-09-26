@@ -60,8 +60,7 @@
 
         public static readonly string[] BlackListFilterBuilderRegister = new string[]
         {
-            "Id",
-            "TipoRegistroId",
+            "InformationType",
             "Page",
             "PageSize",
             "OrderField",
@@ -70,7 +69,7 @@
 
         public static readonly string[] BlackListFilterBuilderInventory = new string[]
         {
-            "Id",
+            "InformationType",
             "Page",
             "PageSize",
             "OrderField",

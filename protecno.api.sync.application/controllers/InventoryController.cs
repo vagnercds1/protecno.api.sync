@@ -27,6 +27,18 @@ namespace protecno.api.sync.application.controllers
     [ApiController]
     public class InventoryController : ControllerBase
     {
+        //Remove this when security be implemented
+        private readonly UserJwt userJwt = new UserJwt()
+        {
+            Email = "teste@teste.com",
+            UserId = 1,
+            TagCustomer = "Inventario Teste",
+            ExpiresPreSignedURL = 1,
+            BaseInventoryId = 1,
+            CustomerId = 1,
+            StartedInventory = false
+        };
+
         private readonly IRepository<Inventory, InventoryPaginateRequest> _inventoryRepository;
         private readonly IInventoryService _inventoryService;
         private readonly IHistoryRepository _historyRepository;
@@ -36,19 +48,7 @@ namespace protecno.api.sync.application.controllers
         private readonly IReportGeneratorService _reportGeneratorService;
         private readonly ILogService _logService;
         private readonly IUnitOfWork _unitOfWork;
-
-        // retirar isso quando implementar a segurança por JWT
-        private readonly UserJwt userJwt = new UserJwt()
-        {
-            Email = "teste@teste.com",
-            UserId = 1,
-            TagCustomer = "Inventario Teste",           
-            ExpiresPreSignedURL = 1,
-            BaseInventoryId = 1,
-            CustomerId = 1,
-            StartedInventory = true
-        };
-
+         
         public InventoryController(
             IUnitOfWork unitOfWork,
             IRepository<Inventory, InventoryPaginateRequest> inventoryRepository,
@@ -129,7 +129,7 @@ namespace protecno.api.sync.application.controllers
                 inventoryRS.HistoryList = await _historyRepository.GetHistoryListAsync(new History()
                 {
                     RegistroId = inventoryByIdRQ.InventoryId,
-                    TipoRegistro = Enum.GetName(typeof(EInventoryType), Inventory.TipoInventarioId)
+                    TipoRegistro = Enum.GetName(typeof(EInformationType), Inventory.InformatioType)
                 });
 
                 return inventoryRS.CreateRestResponse(HttpStatusCode.OK);
@@ -185,7 +185,7 @@ namespace protecno.api.sync.application.controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutInventory(int id, Inventory updateInventoryRQ)
+        public async Task<IActionResult> PutInventoryAsync(int id, Inventory updateInventoryRQ)
         {
             try
             {
@@ -228,7 +228,7 @@ namespace protecno.api.sync.application.controllers
         }
 
         [HttpPost("save-list")]
-        public async Task<IActionResult> SaveListRegisterAsync(List<Inventory> listInventory)
+        public async Task<IActionResult> SaveListInventoryAsync(List<Inventory> listInventory)
         {
             try
             {
@@ -246,7 +246,7 @@ namespace protecno.api.sync.application.controllers
         }
 
         [HttpDelete("delete")]
-        public async Task<IActionResult> Delete(InventoryDeleteRequest inventoryDeleteRequest)
+        public async Task<IActionResult> DeleteAsync(InventoryDeleteRequest inventoryDeleteRequest)
         {
             try
             {   

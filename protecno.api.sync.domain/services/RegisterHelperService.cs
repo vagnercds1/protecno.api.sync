@@ -27,27 +27,27 @@ namespace protecno.api.sync.domain.services
         public Inventory FillAllRegisters(Inventory inventoryRQ)
         {
             if (inventoryRQ.FilialId == 0 || inventoryRQ.FilialId == null)
-                inventoryRQ.FilialId = string.IsNullOrEmpty(inventoryRQ.FilialCodigo) ? 0 : GetRegisterId(inventoryRQ.BaseInventarioId, ERegisterType.filial, inventoryRQ.FilialCodigo);
+                inventoryRQ.FilialId = string.IsNullOrEmpty(inventoryRQ.FilialCodigo) ? 0 : GetRegisterId(inventoryRQ.BaseInventarioId, EInformationType.filial, inventoryRQ.FilialCodigo);
 
             if (inventoryRQ.FilialIdAnterior == 0 || inventoryRQ.FilialIdAnterior == null)
-                inventoryRQ.FilialIdAnterior = string.IsNullOrEmpty(inventoryRQ.FilialCodigoAnterior) ? 0 : GetRegisterId(inventoryRQ.BaseInventarioId, ERegisterType.filial, inventoryRQ.FilialCodigoAnterior);
+                inventoryRQ.FilialIdAnterior = string.IsNullOrEmpty(inventoryRQ.FilialCodigoAnterior) ? 0 : GetRegisterId(inventoryRQ.BaseInventarioId, EInformationType.filial, inventoryRQ.FilialCodigoAnterior);
 
             if (inventoryRQ.LocalId == 0 || inventoryRQ.LocalId == null) 
-                inventoryRQ.LocalId = string.IsNullOrEmpty(inventoryRQ.LocalCodigo) ? 0 : GetRegisterId(inventoryRQ.BaseInventarioId, ERegisterType.local, inventoryRQ.LocalCodigo);
+                inventoryRQ.LocalId = string.IsNullOrEmpty(inventoryRQ.LocalCodigo) ? 0 : GetRegisterId(inventoryRQ.BaseInventarioId, EInformationType.local, inventoryRQ.LocalCodigo);
 
             if (inventoryRQ.ResponsavelId == 0 || inventoryRQ.ResponsavelId == null)
-                inventoryRQ.ResponsavelId = string.IsNullOrEmpty(inventoryRQ.ResponsavelCodigo) ? 0 : GetRegisterId(inventoryRQ.BaseInventarioId, ERegisterType.responsavel, inventoryRQ.ResponsavelCodigo);
+                inventoryRQ.ResponsavelId = string.IsNullOrEmpty(inventoryRQ.ResponsavelCodigo) ? 0 : GetRegisterId(inventoryRQ.BaseInventarioId, EInformationType.responsavel, inventoryRQ.ResponsavelCodigo);
 
             if (inventoryRQ.CentroCustoId == 0 || inventoryRQ.CentroCustoId == null)
-                inventoryRQ.CentroCustoId = string.IsNullOrEmpty(inventoryRQ.CentroCustoCodigo) ? 0 : GetRegisterId(inventoryRQ.BaseInventarioId, ERegisterType.centrocusto, inventoryRQ.CentroCustoCodigo);
+                inventoryRQ.CentroCustoId = string.IsNullOrEmpty(inventoryRQ.CentroCustoCodigo) ? 0 : GetRegisterId(inventoryRQ.BaseInventarioId, EInformationType.centrocusto, inventoryRQ.CentroCustoCodigo);
 
             if (inventoryRQ.ContaContabilId == 0 || inventoryRQ.ContaContabilId == null)
-                inventoryRQ.ContaContabilId = string.IsNullOrEmpty(inventoryRQ.ContaContabilCodigo) ? 0 : GetRegisterId(inventoryRQ.BaseInventarioId, ERegisterType.contacontabil, inventoryRQ.ContaContabilCodigo);
+                inventoryRQ.ContaContabilId = string.IsNullOrEmpty(inventoryRQ.ContaContabilCodigo) ? 0 : GetRegisterId(inventoryRQ.BaseInventarioId, EInformationType.contacontabil, inventoryRQ.ContaContabilCodigo);
 
             return inventoryRQ;
         }
 
-        public int GetRegisterId(int baseInventarioId, ERegisterType registerType, string code)
+        public int GetRegisterId(int baseInventarioId, EInformationType registerType, string code)
         {
             string registerId = _cacheRepository.GetKeyInMemory($"{(int)registerType}{code}{baseInventarioId}");
             if (!string.IsNullOrEmpty(registerId))
@@ -55,7 +55,7 @@ namespace protecno.api.sync.domain.services
 
             var resultQuery = _registerRepository.GetList(new RegisterPaginateRequest()
             {
-                TipoRegistroId = registerType,
+                InformationType = registerType,
                 Codigo = code,
                 BaseInventarioId = baseInventarioId
             });
@@ -87,7 +87,7 @@ namespace protecno.api.sync.domain.services
                         Ativo = true,
                         DataCadastro = date,
                         OrigemId = inventoryRQ.OrigemId,
-                        TipoRegistroId = ERegisterType.filial,
+                        InformationType = EInformationType.filial,
                         Codigo = inventoryRQ.FilialCodigoAnterior,
                         Descricao = inventoryRQ.FilialAnterior
                     },
@@ -110,7 +110,7 @@ namespace protecno.api.sync.domain.services
                         Ativo = true,
                         DataCadastro = date,
                         OrigemId = inventoryRQ.OrigemId,
-                        TipoRegistroId =ERegisterType.filial,
+                        InformationType =EInformationType.filial,
                         Codigo = inventoryRQ.FilialCodigo,
                         Descricao = inventoryRQ.Filial
                     },
@@ -133,7 +133,7 @@ namespace protecno.api.sync.domain.services
                         Ativo = true,
                         DataCadastro = date,
                         OrigemId = inventoryRQ.OrigemId,
-                        TipoRegistroId = ERegisterType.local,
+                        InformationType = EInformationType.local,
                         Codigo = inventoryRQ.LocalCodigo,
                         Descricao = inventoryRQ.Local
                     },
@@ -156,7 +156,7 @@ namespace protecno.api.sync.domain.services
                         Ativo = true,
                         DataCadastro = date,
                         OrigemId = inventoryRQ.OrigemId,
-                        TipoRegistroId = ERegisterType.responsavel,
+                        InformationType = EInformationType.responsavel,
                         Codigo = inventoryRQ.ResponsavelCodigo,
                         Descricao = inventoryRQ.Responsavel
                     },
@@ -179,7 +179,7 @@ namespace protecno.api.sync.domain.services
                         Ativo = true,
                         DataCadastro = date,
                         OrigemId = inventoryRQ.OrigemId,
-                        TipoRegistroId = ERegisterType.centrocusto,
+                        InformationType = EInformationType.centrocusto,
                         Codigo = inventoryRQ.CentroCustoCodigo,
                         Descricao = inventoryRQ.CentroCusto
                     },
@@ -202,7 +202,7 @@ namespace protecno.api.sync.domain.services
                         Ativo = true,
                         DataCadastro = date,
                         OrigemId = inventoryRQ.OrigemId,
-                        TipoRegistroId = ERegisterType.contacontabil,
+                        InformationType = EInformationType.contacontabil,
                         Codigo = inventoryRQ.ContaContabilCodigo,
                         Descricao = inventoryRQ.ContaContabil
                     },

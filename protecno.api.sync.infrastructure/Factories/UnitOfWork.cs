@@ -47,7 +47,12 @@ namespace protecno.api.sync.domain.helpers
 
         public void Commit()
         {
-            _transaction.Commit();              
+            _transaction.Commit();
+
+            _transaction?.Dispose();
+            _transaction = null;
+            _connection.Close();
+            _connection.Dispose();
         }
 
         public void Rollback()

@@ -8,7 +8,7 @@ namespace protecno.api.sync.domain.interfaces
 {
     public interface IRegisterHelperService
     {
-        int GetRegisterId(int baseInventarioId, ERegisterType registerType, string code);
+        int GetRegisterId(int baseInventarioId, EInformationType registerType, string code);
 
         Inventory FillAllRegisters(Inventory inventoryRQ);
 

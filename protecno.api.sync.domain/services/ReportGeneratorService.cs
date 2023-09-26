@@ -4,7 +4,6 @@ using protecno.api.sync.domain.extensions;
 using protecno.api.sync.domain.helpers;
 using protecno.api.sync.domain.interfaces;
 using protecno.api.sync.domain.interfaces.repositories;
-using protecno.api.sync.domain.models;
 using protecno.api.sync.domain.models.generics;
 using protecno.api.sync.domain.models.inventory;
 using protecno.api.sync.domain.models.register;
@@ -49,10 +48,7 @@ namespace protecno.api.sync.domain.services
             _logService = logService;
         }
 
-        public ReportResult RequestReport(
-            ReportRequest reportRequest,
-            EReportType reportType,
-            UserJwt userJwt)
+        public ReportResult RequestReport(ReportRequest reportRequest,EReportType reportType,UserJwt userJwt)
         {
             string keyReportRequest = $"{reportType}-{userJwt.UserId}-{HashHelper.CreateHash<string>(reportRequest.ToJsonString())}";
 
@@ -72,10 +68,7 @@ namespace protecno.api.sync.domain.services
             return requestReportResult;
         }
 
-        private void BuildReport(ReportRequest reportRequest,
-            EReportType reportType,
-            string keyReportRequest,
-            UserJwt userJwt)
+        private void BuildReport(ReportRequest reportRequest,EReportType reportType,string keyReportRequest,UserJwt userJwt)
         {
             try
             {
@@ -105,7 +98,7 @@ namespace protecno.api.sync.domain.services
                         break;
                 }
 
-                if (System.IO.File.Exists(requestReportResult.CacheReport.FullPath))
+                if (System.IO.File.Exists(requestReportResult.CacheReport.FullFilePath))
                 {
                     _reportCashService.SaveCache(keyReportRequest,
                     reportType.ToString(),
@@ -144,7 +137,7 @@ namespace protecno.api.sync.domain.services
                 switch (reportType)
                 {
                     case EReportType.InventarioFisicoCSV:
-                        _csvHelperService.WriteRecordsAsync(requestReportResult.CacheReport.FullPath, itemRS.ListItens.ToList<object>(), printHeader, reportType);
+                        _csvHelperService.WriteRecordsAsync(requestReportResult.CacheReport.FullFilePath, itemRS.ListItens.ToList<object>(), printHeader, reportType);
                         break;
 
                     case EReportType.InventarioFisicoPDF:
@@ -171,27 +164,27 @@ namespace protecno.api.sync.domain.services
             {
                 case EReportType.FilialCSV:
                 case EReportType.FilialPDF:
-                    registerPaginateRequestRQ.TipoRegistroId = ERegisterType.filial;
+                    registerPaginateRequestRQ.InformationType = EInformationType.filial;
                     break;
 
                 case EReportType.LocalCSV:
                 case EReportType.LocalPDF:
-                    registerPaginateRequestRQ.TipoRegistroId = ERegisterType.local;
+                    registerPaginateRequestRQ.InformationType = EInformationType.local;
                     break;
 
                 case EReportType.CentroCustoCSV:
                 case EReportType.CentroCustoPDF:
-                    registerPaginateRequestRQ.TipoRegistroId = ERegisterType.centrocusto;
+                    registerPaginateRequestRQ.InformationType = EInformationType.centrocusto;
                     break;
 
                 case EReportType.ResponsavelCSV:
                 case EReportType.ResponsavelPDF:
-                    registerPaginateRequestRQ.TipoRegistroId = ERegisterType.responsavel;
+                    registerPaginateRequestRQ.InformationType = EInformationType.responsavel;
                     break;
 
                 case EReportType.ContaContabilCSV:
                 case EReportType.ContaContabilPDF:
-                    registerPaginateRequestRQ.TipoRegistroId = ERegisterType.contacontabil;
+                    registerPaginateRequestRQ.InformationType = EInformationType.contacontabil;
                     break;
             }
 
@@ -204,14 +197,14 @@ namespace protecno.api.sync.domain.services
             while (itemRS.ListItens.Any())
             {
                 if (reportType.GetGroupName().ToString() == ".csv")
-                    _csvHelperService.WriteRecordsAsync(requestReportResult.CacheReport.FullPath, itemRS.ListItens.ToList<object>(), printHeader, reportType);
+                    _csvHelperService.WriteRecordsAsync(requestReportResult.CacheReport.FullFilePath, itemRS.ListItens.ToList<object>(), printHeader, reportType);
 
                 printHeader = false;
                 exported += itemRS.ListItens.Count;
                 registerPaginateRequestRQ.Page++;
 
                 itemRS = _registerService.GetPagintateAsync(registerPaginateRequestRQ, userId).Result;
-            }
+            } 
         }
     }
 }

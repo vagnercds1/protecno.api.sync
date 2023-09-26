@@ -1,16 +1,29 @@
-# protecno.api.sync
-This project constitutes the API that comprises the Fixed Asset Inventory Platform. Throughout this project, I have implemented the latest concepts and technologies that I have acquired.
+# README #
 
-The API is developed using net6.0 and is intended to be deployed on AWS with App Runner.
+This README would normally document whatever steps are necessary to get your application up and running.
 
-The development process is ongoing.
+### What is this repository for? ###
 
-The file labeled General Architecture.jpg depicts the complete AWS Architecture.
+* Quick summary
+* Version
+* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
 
-While all endpoints respond asynchronously, the fundamental operations at the core remain synchronous. This choice is made to ensure comprehensive data integrity when dealing with the numerous options within the database during usage.
+### How do I get set up? ###
 
-All queries are paginated and utilize caching to ensure optimal performance and reduce the number of direct queries to the underlying database.
+* Summary of set up
+* Configuration
+* Dependencies
+* Database configuration
+* How to run tests
+* Deployment instructions
 
-Any modifications undergo rigorous control with a fully dynamic history recording mechanism.
+### Contribution guidelines ###
 
-In the event of errors, the log service, powered by Serilog, writes all necessary information into MySQL. This information is crucial for subsequent analysis in Grafana.
+* Writing tests
+* Code review
+* Other guidelines
+
+### Who do I talk to? ###
+
+* Repo owner or admin
+* Other community or team contact

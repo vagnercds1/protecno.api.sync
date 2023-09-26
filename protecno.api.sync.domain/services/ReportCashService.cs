@@ -1,7 +1,6 @@
 ﻿using protecno.api.sync.domain.common;
 using protecno.api.sync.domain.extensions;
 using protecno.api.sync.domain.interfaces.repositories;
-using protecno.api.sync.domain.models;
 using protecno.api.sync.domain.models.report;
 using System;
 using System.IO;
@@ -33,11 +32,11 @@ namespace protecno.api.sync.domain.services
                 StatusCode = statusCode,
                 CacheReport = new ReportCache()
                 { 
-                    ResportType = reportType,
+                    InformationType = reportType,
                     FilePath = Path.Combine(AppContext.BaseDirectory, "Reports"),
-                    FileName = $"{keyReportRequest}{extension}",
-                    FullPath = Path.Combine(AppContext.BaseDirectory, "Reports", $"{keyReportRequest}{extension}"),
-                    ReturnFileName = $"{reportType}-{DateTime.Now.ToString("dd.MM.yyy hh.mm")}{extension}"
+                    InternalFileName = $"{keyReportRequest}{extension}",
+                    FullFilePath = Path.Combine(AppContext.BaseDirectory, "Reports", $"{keyReportRequest}{extension}"),
+                    PublicFileName = $"{reportType}-{DateTime.Now.ToString("dd.MM.yyy hh.mm")}{extension}"
                 }
             };
 

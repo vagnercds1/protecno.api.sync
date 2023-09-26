@@ -23,14 +23,7 @@ namespace protecno.api.sync.application.controllers
     [ApiController]
     public class RegisterController : ControllerBase
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IRepository<Register, RegisterPaginateRequest> _registerRepository;
-        private readonly IHistoryRepository _historyRepository;
-        private readonly IRegisterService _registerService;
-        private readonly IMapper _mapper;
-        private readonly ILogService _logService;
-
-        // retirar isso quando implementar a segurança por JWT
+        // Remove this when security be implemented
         private readonly UserJwt userJwt = new UserJwt()
         {
             Email = "teste@teste.com",
@@ -41,6 +34,13 @@ namespace protecno.api.sync.application.controllers
             CustomerId = 1,
             StartedInventory = false
         };
+
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IRepository<Register, RegisterPaginateRequest> _registerRepository;
+        private readonly IHistoryRepository _historyRepository;
+        private readonly IRegisterService _registerService;
+        private readonly IMapper _mapper;
+        private readonly ILogService _logService;
 
         public RegisterController(IRepository<Register, RegisterPaginateRequest> registerRepo,
             IHistoryRepository historyRepo,
@@ -80,7 +80,7 @@ namespace protecno.api.sync.application.controllers
             }
             catch (Exception ex)
             {
-                string message = $"Erro ao executar a consulta de {Enum.GetName(typeof(ERegisterType), registerRequest.TipoRegistroId)}";
+                string message = $"Erro ao executar a consulta de {Enum.GetName(typeof(EInformationType), registerRequest.InformationType)}";
                 _logService.WhriteErro(ex, message, userJwt);
 
                 return message.CreateRestResponse((HttpStatusCode.InternalServerError));
@@ -100,7 +100,7 @@ namespace protecno.api.sync.application.controllers
 
                 var list = await _registerRepository.GetListAsync(new RegisterPaginateRequest()
                 {
-                    TipoRegistroId = registerByIdRQ.TipoRegistroId,
+                    InformationType = registerByIdRQ.InformationType,
                     Id = registerByIdRQ.RegisterId,
                     BaseInventarioId = registerByIdRQ.BaseInventarioId
                 });
@@ -112,13 +112,13 @@ namespace protecno.api.sync.application.controllers
 
                 RegisterResult registerRS = _mapper.Map<RegisterResult>(register);
 
-                registerRS.HistoryList = await _historyRepository.GetHistoryListAsync(new History() { TipoRegistro = Enum.GetName(typeof(ERegisterType), registerByIdRQ.TipoRegistroId), RegistroId = (int)register.Id });
+                registerRS.HistoryList = await _historyRepository.GetHistoryListAsync(new History() { TipoRegistro = Enum.GetName(typeof(EInformationType), registerByIdRQ.InformationType), RegistroId = (int)register.Id });
 
                 return registerRS.CreateRestResponse(HttpStatusCode.OK);
             }
             catch (Exception ex)
             {
-                string message = $"Erro ao executar a consulta de {Enum.GetName(typeof(ERegisterType), registerByIdRQ.TipoRegistroId)}";
+                string message = $"Erro ao executar a consulta de {Enum.GetName(typeof(EInformationType), registerByIdRQ.InformationType)}";
                 _logService.WhriteErro(ex, message, userJwt);
 
                 return message.CreateRestResponse((HttpStatusCode.InternalServerError));
@@ -126,7 +126,7 @@ namespace protecno.api.sync.application.controllers
         }
 
         [HttpPost()]
-        public async Task<IActionResult> PostRegister(Register register)
+        public async Task<IActionResult> PostRegisterAsync(Register register)
         {
             try
             {
@@ -143,10 +143,10 @@ namespace protecno.api.sync.application.controllers
             catch (MySqlException ex)
             {
                 if (ex.Number == 1062)
-                    return $"{Enum.GetName(typeof(ERegisterType), register.TipoRegistroId)} código: '{register.Codigo}' já existe.".CreateRestResponse((HttpStatusCode.BadRequest));
+                    return $"{Enum.GetName(typeof(EInformationType), register.InformationType)} código: '{register.Codigo}' já existe.".CreateRestResponse((HttpStatusCode.BadRequest));
                 else
                 {
-                    string message = $"Erro ao inserir {Enum.GetName(typeof(ERegisterType), register.TipoRegistroId)}";
+                    string message = $"Erro ao inserir {Enum.GetName(typeof(EInformationType), register.InformationType)}";
 
                     _logService.WhriteErro(ex, message, userJwt);
 
@@ -155,7 +155,7 @@ namespace protecno.api.sync.application.controllers
             }
             catch (System.Exception ex)
             {
-                string message = $"Erro ao inserir {Enum.GetName(typeof(ERegisterType), register.TipoRegistroId)}";
+                string message = $"Erro ao inserir {Enum.GetName(typeof(EInformationType), register.InformationType)}";
 
                 _logService.WhriteErro(ex, message, userJwt);
 
@@ -164,7 +164,7 @@ namespace protecno.api.sync.application.controllers
         }
 
         [HttpPut()]
-        public async Task<IActionResult> PutRegister(Register registerPutRQ)
+        public async Task<IActionResult> PutRegisterAsync(Register registerPutRQ)
         {
             try
             {
@@ -174,7 +174,7 @@ namespace protecno.api.sync.application.controllers
 
                 var list = await _registerRepository.GetListAsync(new RegisterPaginateRequest()
                 {
-                    TipoRegistroId = registerPutRQ.TipoRegistroId,
+                    InformationType = registerPutRQ.InformationType,
                     Id = registerPutRQ.Id,
                     BaseInventarioId = registerPutRQ.BaseInventarioId,
                     Ativo = null
@@ -202,7 +202,7 @@ namespace protecno.api.sync.application.controllers
                     return $"O código: '{registerPutRQ.Codigo}' já existe.".CreateRestResponse((HttpStatusCode.BadRequest));
                 else
                 {
-                    string message = $"Erro ao atualizar {Enum.GetName(typeof(ERegisterType), registerPutRQ.TipoRegistroId)}.";
+                    string message = $"Erro ao atualizar {Enum.GetName(typeof(EInformationType), registerPutRQ.InformationType)}.";
                     _logService.WhriteErro(ex, message, userJwt);
                     return message.CreateRestResponse(HttpStatusCode.InternalServerError);
                 }
@@ -210,7 +210,7 @@ namespace protecno.api.sync.application.controllers
             catch (System.Exception ex)
             {
                 _unitOfWork.Rollback();
-                string message = $"Erro ao atualizar {Enum.GetName(typeof(ERegisterType), registerPutRQ.TipoRegistroId)}";
+                string message = $"Erro ao atualizar {Enum.GetName(typeof(EInformationType), registerPutRQ.InformationType)}";
                 _logService.WhriteErro(ex, message, userJwt);
                 return message.CreateRestResponse(HttpStatusCode.InternalServerError);
             }
@@ -227,7 +227,7 @@ namespace protecno.api.sync.application.controllers
             }
             catch (System.Exception ex)
             {
-                string message = $"Erro ao salvar lista de {Enum.GetName(typeof(ERegisterType), listRegister.First().TipoRegistroId)}";
+                string message = $"Erro ao salvar lista de {Enum.GetName(typeof(EInformationType), listRegister.First().InformationType)}";
                 _logService.WhriteErro(ex, message, userJwt);
 
                 return message.CreateRestResponse((HttpStatusCode.InternalServerError));
@@ -235,23 +235,29 @@ namespace protecno.api.sync.application.controllers
         }
 
         [HttpDelete("delete")]
-        public async Task<IActionResult> Delete(RegisterDeleteRequest registerDeleteRequest)
+        public async Task<IActionResult> DeleteAsync(RegisterDeleteRequest registerDeleteRequest)
         {
             try
-            { 
+            {
                 var result = await Task.Run(() => _registerService.RemoveRegister(registerDeleteRequest, userJwt, DateTime.Now));
 
-                if (!result.IsValid)
+                if (!result.IsValid && string.IsNullOrEmpty(result.Message))
                 {
                     string messages = String.Join(", ", result.Errors.Select(x => x.ErrorMessage).ToList());
                     return new { DiscartedItemRQ = registerDeleteRequest, messages }.CreateRestResponse(HttpStatusCode.BadRequest);
                 }
-                else               
-                    return result.Message.CreateRestResponse(HttpStatusCode.OK);                
+                else
+                {
+                    return new
+                    {
+                        Message = result.Message,
+                        ListFails = result.Errors.Select(x => x.ErrorMessage)
+                    }.CreateRestResponse(HttpStatusCode.OK);
+                }
             }
             catch (System.Exception ex)
-            { 
-                string message = $"Erro ao remover {Enum.GetName(typeof(ERegisterType), registerDeleteRequest.TipoRegistroId)}";
+            {
+                string message = $"Erro ao remover {Enum.GetName(typeof(EInformationType), registerDeleteRequest.InformationType)}";
                 _logService.WhriteErro(ex, message, userJwt);
                 return message.CreateRestResponse(HttpStatusCode.InternalServerError);
             }

@@ -20,18 +20,19 @@ namespace protecno.api.sync.infrastructure.repositories
             _cacheRepository = cacheRepository;
         }
 
-        public async Task<int> GetCountItensAsync(string query, DynamicParameters dbArgs, string serializedQuest, int userId, string partKey)
+        public async Task<int> GetCountItensAsync(string entity,string sqlFilter, DynamicParameters dbArgs, string serializedQuest, int userId)
         {
-            string key = $"{partKey}:{userId}-{HashHelper.CreateHash<string>(serializedQuest)}";
+            int count = 0;
+            string key = $"count{entity}:{userId}-{HashHelper.CreateHash<string>(serializedQuest)}";
 
             var result = _cacheRepository.GetKeyInMemory(key);
 
             if (!string.IsNullOrEmpty(result))
                 return Convert.ToInt32(result);
-             
-            int count = 0;
+                   
+            string queryCount = $@" SELECT COUNT(*) FROM db_protecno.{entity} T {sqlFilter}";
 
-            count = await _dbConnection.ExecuteScalarAsync<int>(sql: query, param: dbArgs);
+            count = await _dbConnection.ExecuteScalarAsync<int>(sql: queryCount, param: dbArgs);
 
             _cacheRepository.SetKeyInMemory(key, count.ToString(), Constants.TTL_COUNT_MINUTES);
 

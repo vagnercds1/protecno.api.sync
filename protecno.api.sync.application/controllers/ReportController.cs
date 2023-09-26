@@ -17,6 +17,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace protecno.api.sync.application.controllers
@@ -25,6 +26,18 @@ namespace protecno.api.sync.application.controllers
     [ApiController]
     public class ReportController : ControllerBase
     {
+        //Remove this when security be implemented
+        private readonly UserJwt userJwt = new UserJwt()
+        {
+            Email = "teste@teste.com",
+            UserId = 1,
+            TagCustomer = "Inventario Teste",
+            ExpiresPreSignedURL = 1,
+            BaseInventoryId = 1,
+            CustomerId = 1,
+            StartedInventory = true
+        };
+
         private readonly IRepository<Inventory, InventoryPaginateRequest> _inventoryRepository;
         private readonly IInventoryService _inventoryService;
         private readonly IMapper _mapper;
@@ -46,21 +59,10 @@ namespace protecno.api.sync.application.controllers
             _csvHelperService = csvHelperService;
             _reportGeneratorService = reportGeneratorService;
             _logService = logService;
-        }
-
-        // retirar isso quando implementar a segurança por JWT
-        private readonly UserJwt userJwt = new UserJwt()
-        {
-            Email = "teste@teste.com",
-            UserId = 1,
-            TagCustomer = "Inventario Teste",           
-            ExpiresPreSignedURL = 1,
-            BaseInventoryId = 1,
-            CustomerId = 1
-        };
+        } 
 
         [HttpGet("request")]
-        public IActionResult RequestReportAsync([FromQuery] ReportRequest request)
+        public async Task<IActionResult> RequestReportAsync([FromQuery] ReportRequest request)
         {
             ReportResult requestReportResult = new();
             try
@@ -70,8 +72,8 @@ namespace protecno.api.sync.application.controllers
 
                 if (!resultValidation.IsValid)
                     return resultValidation.Errors.Select(x => x.ErrorMessage).CreateRestResponse(HttpStatusCode.BadRequest);
-                  
-                requestReportResult = _reportGeneratorService.RequestReport(request, request.ReportType, userJwt);
+
+                requestReportResult = await Task.Run(() => _reportGeneratorService.RequestReport(request, request.ReportType, userJwt));
 
                 if (requestReportResult.StatusCode == HttpStatusCode.InternalServerError)
                     return Constants.Messages.REPORT_GENERATE_FAIL.CreateRestResponse((HttpStatusCode.InternalServerError));
@@ -82,10 +84,10 @@ namespace protecno.api.sync.application.controllers
                 if (requestReportResult.StatusCode == HttpStatusCode.Processing)
                     return "Processando".CreateRestResponse();
 
-                return File(new FileStreamDeleteHelper(Path.Combine(requestReportResult.CacheReport.FilePath, requestReportResult.CacheReport.FileName),
+                return File(new FileStreamDeleteHelper(Path.Combine(requestReportResult.CacheReport.FilePath, requestReportResult.CacheReport.InternalFileName),
                                                        FileMode.Open),
                             Text.Plain,
-                            requestReportResult.CacheReport.ReturnFileName);
+                            requestReportResult.CacheReport.PublicFileName);
             }
             catch (Exception ex)
             {

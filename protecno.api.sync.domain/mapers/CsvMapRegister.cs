@@ -9,7 +9,7 @@ namespace protecno.api.sync.domain.mapers
         public CsvMapRegister()
         {
             AutoMap(CultureInfo.InvariantCulture);
-            Map(m => m.TipoRegistroId).Ignore();
+            Map(m => m.InformationType).Ignore();
             Map(m => m.OrigemId).Ignore();
             Map(m => m.Origem).Ignore();
             Map(m => m.DataCadastro).Ignore();
@@ -17,6 +17,7 @@ namespace protecno.api.sync.domain.mapers
             Map(m => m.DataSync).Ignore();
             Map(m => m.Usuario).Ignore();
             Map(m => m.UsuarioId).Ignore();
+            Map(m => m.Id).Ignore();
         }
     }  
 }

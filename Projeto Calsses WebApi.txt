@@ -1,0 +1,33 @@
+
+-- Classes API --
+ 
+BaseInventario
+	+PostBaseInventory()
+	+PutBaseInventory()
+	+GetBaseInventory()
+	
+Usuarios
+	+GetUsers()
+	+PostUser()
+	+PutUser()
+	
+Configuração
+	+PutConfigurarion()
+	+GetConfiguration()
+	
+Cadastros 
+	+GetRegistersPagintateAsync()
+	+PostRegister()
+	+PutRegister()
+ 
+Inventario
+    +GetInventoryPagintateAsync()
+	+PostInventory()
+	+PutInventory()
+	 
+Conciliacao
+    +GetConciliation()
+	+PostConciliation()
+    +PostUnconciliation()
+	
+

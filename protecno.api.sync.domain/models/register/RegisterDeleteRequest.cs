@@ -1,16 +1,17 @@
 ﻿using Newtonsoft.Json;
 using protecno.api.sync.domain.enumerators;
+using System.Collections.Generic;
 
 namespace protecno.api.sync.domain.models.register
 {
     public class RegisterDeleteRequest
     {
-        public int? BaseInventarioId { get; set; }
+        public int? BaseInventoryId { get; set; }
 
-        public ERegisterType? TipoRegistroId { get; set; }
+        public EInformationType? InformationType { get; set; }
 
         public bool DeleteAll { get; set; }
 
-        public string Codigo { get; set; }
+        public List<string> RegisterCodeList { get; set; }
     }
 }

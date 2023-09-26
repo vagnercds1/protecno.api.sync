@@ -36,12 +36,12 @@ namespace protecno.api.sync.infrastructure.IoC
                 cfg.CreateMap<ValidationResult, InventoryValidationResult>();
 
                 cfg.CreateMap<ReportRequest, RegisterPaginateRequest>();
-                cfg.CreateMap<RegisterPaginateRequest, ReportRequest>(); 
+                cfg.CreateMap<RegisterPaginateRequest, ReportRequest>();
             });
 
             IMapper mapper = config.CreateMapper();
 
-            services.AddSingleton(mapper); 
+            services.AddSingleton(mapper);
 
             Log.Logger = new LoggerConfiguration()
                         .Enrich.FromLogContext()
@@ -53,7 +53,7 @@ namespace protecno.api.sync.infrastructure.IoC
         }
 
         public static IServiceCollection AddServices(this IServiceCollection services)
-        { 
+        {
             services.AddScoped<ILogService, LogService>();
             services.AddScoped<IReportCashService, ReportCashService>();
             services.AddScoped<IInventoryService, InventoryService>();
@@ -62,7 +62,9 @@ namespace protecno.api.sync.infrastructure.IoC
             services.AddScoped<ICsvHelperService, CsvHelperService>();
             services.AddSingleton<IAmazonS3, AmazonS3Client>();
             services.AddSingleton<IS3Helper, S3Helper>();
-            services.AddScoped<IReportGeneratorService, ReportGeneratorService>();         
+            services.AddScoped<IReportGeneratorService, ReportGeneratorService>();
+            services.AddScoped<IImportFileService, ImportFileService>();
+            services.AddScoped<IImportCashService, ImportCashService>();            
             return services;
         }
 
@@ -74,7 +76,7 @@ namespace protecno.api.sync.infrastructure.IoC
 
             var serviceProvider = services.BuildServiceProvider();
             IDbConnectionFactory dbConnectionFactory = serviceProvider.GetService<IDbConnectionFactory>();
-             
+
             var dbConnection = dbConnectionFactory.GetConnection("InventoryDb");
 
             services.AddScoped<ICountRepository, CountRepository>(provider =>

@@ -16,7 +16,8 @@ namespace protecno.api.sync.domain.entities
 
         public int Id { get; set; }
 
-        public EInventoryType? TipoInventarioId { get; set; }
+        public EInformationType? InformatioType
+        { get; set; }
 
         public bool? Ativo { get; set; }
 

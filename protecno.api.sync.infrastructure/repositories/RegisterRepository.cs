@@ -38,7 +38,7 @@ namespace protecno.api.sync.infrastructure.repositories
                                       O.Nome Origem,
                                       T.DataCadastro,                  
                                       T.DataAtualizacao                                                                                 
-	                          FROM db_protecno.{Enum.GetName(typeof(ERegisterType), registerPaginateRequest.TipoRegistroId)} T 
+	                          FROM db_protecno.{Enum.GetName(typeof(EInformationType), registerPaginateRequest.InformationType)} T 
                       INNER JOIN db_protecno.usuario U on T.UsuarioId = U.Id 
                       INNER JOIN db_protecno.origem O on T.OrigemId = O.Id  
                       {sqlFilter} {pagination}; ";
@@ -67,14 +67,13 @@ namespace protecno.api.sync.infrastructure.repositories
                                          O.Nome Origem,
                                          T.DataCadastro,                  
                                          T.DataAtualizacao                                                                                 
-	                             FROM db_protecno.{Enum.GetName(typeof(ERegisterType), filterRQ.TipoRegistroId)} T 
+	                             FROM db_protecno.{Enum.GetName(typeof(EInformationType), filterRQ.InformationType)} T 
                            INNER JOIN db_protecno.usuario U on T.UsuarioId = U.Id 
                            INNER JOIN db_protecno.origem O on T.OrigemId = O.Id ";
             query += $" {sqlFilter}  ";
 
             listRegister = (List<Register>)await _dbConnection.QueryAsync<Register>(sql: query, param: dbArgs);
-
-            var aa = _dbConnection.State;
+             
             return listRegister;
         }
 
@@ -97,21 +96,20 @@ namespace protecno.api.sync.infrastructure.repositories
                                          O.Nome Origem,
                                          T.DataCadastro,                  
                                          T.DataAtualizacao                                                                                 
-	                             FROM db_protecno.{Enum.GetName(typeof(ERegisterType), filterRQ.TipoRegistroId)} T 
+	                             FROM db_protecno.{Enum.GetName(typeof(EInformationType), filterRQ.InformationType)} T 
                            INNER JOIN db_protecno.usuario U on T.UsuarioId = U.Id 
                            INNER JOIN db_protecno.origem O on T.OrigemId = O.Id ";
             query += $" {sqlFilter}  ";
 
             listRegister = (List<Register>)_dbConnection.Query<Register>(sql: query, param: dbArgs);
-
-            var aa = _dbConnection.State;
+             
             return listRegister;
         }
  
         public void Update(Register register)
         { 
                 register.DataSync = DateTime.Now;
-                string sql = $@" UPDATE db_protecno.{Enum.GetName(typeof(ERegisterType), register.TipoRegistroId)}  
+                string sql = $@" UPDATE db_protecno.{Enum.GetName(typeof(EInformationType), register.InformationType)}  
                                SET Codigo = @Codigo, Descricao = @Descricao, Ativo = @Ativo, DataAtualizacao = @DataAtualizacao, DataSync = @DataSync
                              WHERE Id = @Id and BaseInventarioId = @BaseInventarioId";
 
@@ -121,7 +119,7 @@ namespace protecno.api.sync.infrastructure.repositories
         public int Insert(Register register)
         {
             register.DataSync = DateTime.Now;
-            string insertQuery = $@" INSERT INTO db_protecno.{Enum.GetName(typeof(ERegisterType), register.TipoRegistroId)} 
+            string insertQuery = $@" INSERT INTO db_protecno.{Enum.GetName(typeof(EInformationType), register.InformationType)} 
                                      (Codigo, Descricao, Ativo, DataCadastro, BaseInventarioId, UsuarioId, OrigemId, DataSync) 
                                       VALUES
                                      (@Codigo, @Descricao, @Ativo, @DataCadastro, @BaseInventarioId, @UsuarioId, @OrigemId, @DataSync);
@@ -135,7 +133,7 @@ namespace protecno.api.sync.infrastructure.repositories
 
         public int Delete(Register register)
         {
-            string deleteQuery = $@" DELETE FROM db_protecno.{Enum.GetName(typeof(ERegisterType), register.TipoRegistroId)} WHERE ID = @Id ";
+            string deleteQuery = $@" DELETE FROM db_protecno.{Enum.GetName(typeof(EInformationType), register.InformationType)} WHERE ID = @Id ";
 
             return _dbConnection.Execute(deleteQuery, new { Id = register.Id });
         }

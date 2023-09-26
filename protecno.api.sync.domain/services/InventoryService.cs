@@ -6,15 +6,18 @@ using protecno.api.sync.domain.common;
 using protecno.api.sync.domain.entities;
 using protecno.api.sync.domain.enumerators;
 using protecno.api.sync.domain.extensions;
+using protecno.api.sync.domain.helpers;
 using protecno.api.sync.domain.interfaces;
 using protecno.api.sync.domain.interfaces.repositories;
 using protecno.api.sync.domain.models.generics;
 using protecno.api.sync.domain.models.inventory;
+using protecno.api.sync.domain.models.register;
 using protecno.api.sync.domain.validations;
 using ServiceStack.Messaging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Policy;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -79,7 +82,9 @@ namespace protecno.api.sync.domain.services
 
             inventoryValidationResult.InventoryObject = inventoryRQ;
 
-            _cacheRepository.RemoveKeysInMemoryCacheByPartKey("count");
+            string inventoryType = EnumHelper.GetEnumTitleCase<EInformationType>((EInformationType)inventoryRQ.InformatioType);
+            _cacheRepository.RemoveKeysInMemoryCacheByPartKey($"count{inventoryType}");
+
             return inventoryValidationResult;
         }
 
@@ -115,7 +120,7 @@ namespace protecno.api.sync.domain.services
                                                                         originalInventory.Id,
                                                                         (int)originalInventory.OrigemId,
                                                                         userJWT.UserId,
-                                                                        Enum.GetName(typeof(EInventoryType), updateInventory.TipoInventarioId),
+                                                                        Enum.GetName(typeof(EInformationType), updateInventory.InformatioType),
                                                                         CommonLists.InventoryFildsToCompare.ToList());
 
             updateInventory.Anotacoes = FillAnnotations(originalInventory.Anotacoes, updateInventory.Mensagem, userJWT.Email, saveDate);
@@ -167,8 +172,12 @@ namespace protecno.api.sync.domain.services
             return listAnotacoes.ToJsonString();
         }
 
+        #region Delete Methods
+
         public InventoryValidationResult RemoveInventory(InventoryDeleteRequest inventoryDeleteRequest, UserJwt userJwt, DateTime saveDate)
         {
+            string inventoryType = EnumHelper.GetEnumTitleCase<EInformationType>((EInformationType)inventoryDeleteRequest.InformationType);
+
             InventoryDeleteValidation validation = new InventoryDeleteValidation();
             ValidationResult result = validation.Validate(inventoryDeleteRequest);
             InventoryValidationResult resultValidation = _mapper.Map<InventoryValidationResult>(result);
@@ -182,33 +191,57 @@ namespace protecno.api.sync.domain.services
             else
                 count = RemoveList(inventoryDeleteRequest, userJwt, saveDate);
 
-            _cacheRepository.RemoveKeysInMemoryCacheByPartKey("count");
+            _cacheRepository.RemoveKeysInMemoryCacheByPartKey($"count{inventoryType}");
 
-            resultValidation.Message = $"Foram removido {count} itens de inventário";
-            return new InventoryValidationResult();
+            resultValidation.Message = $" {count} itens de inventário removidos";
+
+            return resultValidation;
         }
 
         private int RemoveAll(InventoryDeleteRequest inventoryDeleteRequest, UserJwt userJwt, DateTime saveDate)
         {
+            int count = 0;
 
+            var list = _inventoryRepository.GetList(new InventoryPaginateRequest()
+            {
+                InformatioType = inventoryDeleteRequest.InformationType,
+                BaseInventarioId = (Int32)inventoryDeleteRequest.BaseInventoryId
+            });
 
+            foreach (var item in list)
+            {
+                if (userJwt.StartedInventory)
+                {
+                    Inventory updateInventory = item.Clone<Inventory>();
+                    updateInventory.Ativo = false;
 
-            return 1;
+                    InventoryValidationResult updateResult = UpdateInventory(item, updateInventory, userJwt, saveDate, false, true);
+
+                    if (updateResult.IsValid)
+                        count++;
+                }
+                else
+                {
+                    if (_inventoryRepository.Delete(item) > 0)
+                        count++;
+                }
+            }
+
+            return count;
         }
 
         private int RemoveList(InventoryDeleteRequest inventoryDeleteRequest, UserJwt userJwt, DateTime saveDate)
-        { 
+        {
             int count = 0;
             foreach (int inventoryId in inventoryDeleteRequest.InventoryIdList)
             {
                 var list = _inventoryRepository.GetList(new InventoryPaginateRequest()
                 {
                     Id = inventoryId,
-                    TipoInventarioId = inventoryDeleteRequest.TipoInventarioId,
-                    BaseInventarioId = (Int32)inventoryDeleteRequest.BaseInventarioId
+                    BaseInventarioId = (Int32)inventoryDeleteRequest.BaseInventoryId
                 });
 
-                if (list != null)
+                if (list.Count > 0)
                 {
                     if (userJwt.StartedInventory)
                     {
@@ -230,6 +263,8 @@ namespace protecno.api.sync.domain.services
             return count;
         }
 
+        #endregion
+
         #region Save List Methods
 
         public SaveListResult SaveInventoryList(List<Inventory> listInventory, UserJwt userJWT, DateTime saveDate)
@@ -245,9 +280,7 @@ namespace protecno.api.sync.domain.services
                 processSave = InsertList(processSave, userJWT, saveDate);
 
                 _unitOfWork.Commit();
-
-                _cacheRepository.RemoveKeysInMemoryCacheByPartKey($"count");
-
+                 
                 return processSave.SaveListRS;
             }
             catch
@@ -327,7 +360,7 @@ namespace protecno.api.sync.domain.services
         #endregion
 
         #region Paginate Methods
-       
+
         public async Task<ContainerResult<Inventory>> GetPagintateAsync(InventoryPaginateRequest inventoryRQ, int userId)
         {
             string sqlFilter = string.Empty;
@@ -348,14 +381,12 @@ namespace protecno.api.sync.domain.services
         }
 
         private async Task<int> GetCountAsync(InventoryPaginateRequest inventoryRQ, string sqlFilter, DynamicParameters dbArgs, int userId)
-        {
-            //This query will leave here and go to the Repository Service
-            string queryCount = $"SELECT COUNT(*) FROM db_protecno.inventario T {sqlFilter}";
+        {  
             var inventoryRqClone = inventoryRQ.Clone<InventoryPaginateRequest>();
             inventoryRqClone.Page = 0;
             inventoryRqClone.PageSize = 0;
-
-            return await _countRepository.GetCountItensAsync(queryCount, dbArgs, inventoryRqClone.ToJsonString(), userId, "countInventory");
+             
+            return await _countRepository.GetCountItensAsync("inventario", sqlFilter, dbArgs, inventoryRqClone.ToJsonString(), userId);
         }
 
         #endregion

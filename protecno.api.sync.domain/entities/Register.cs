@@ -12,7 +12,7 @@ namespace protecno.api.sync.domain.entities
         public int? Id { get; set; }
 
         [JsonIgnore]
-        public ERegisterType? TipoRegistroId { get; set; }
+        public EInformationType? InformationType { get; set; }
          
         public bool? Ativo { get; set; }
          

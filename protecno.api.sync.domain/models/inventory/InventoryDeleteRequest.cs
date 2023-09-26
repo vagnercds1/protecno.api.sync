@@ -5,9 +5,9 @@ namespace protecno.api.sync.domain.models.inventory
 {
     public class InventoryDeleteRequest
     {
-        public int? BaseInventarioId { get; set; }
+        public int? BaseInventoryId { get; set; }
 
-        public EInventoryType? TipoInventarioId { get; set; }
+        public EInformationType? InformationType { get; set; }
 
         public bool DeleteAll { get; set; }
 

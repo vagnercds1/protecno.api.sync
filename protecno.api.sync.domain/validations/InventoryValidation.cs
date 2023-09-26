@@ -3,6 +3,7 @@ using protecno.api.sync.domain.entities;
 using protecno.api.sync.domain.enumerators;
 using protecno.api.sync.domain.models.inventory;
 using System;
+using System.Linq;
 
 namespace protecno.api.sync.domain.validations
 {
@@ -10,10 +11,10 @@ namespace protecno.api.sync.domain.validations
     {
         public InventoryValidationGet()
         {
-            RuleFor(x => x).Cascade(CascadeMode.Continue).Must(x => x.TipoInventarioId > 0).WithMessage("Informe TipoInventarioId");
+            RuleFor(x => x).Cascade(CascadeMode.Continue).Must(x => x.InformatioType > 0).WithMessage("Informe InformatioType");
 
-            RuleFor(x => x).Cascade(CascadeMode.Continue).Must(x => Enum.IsDefined(typeof(EInventoryType), x.TipoInventarioId)).WithMessage("TipoInventarioId inválido")
-                                                         .When(x => x.TipoInventarioId != null);
+            RuleFor(x => x).Cascade(CascadeMode.Continue).Must(x => x.InformatioType == EInformationType.inventarioFisico || x.InformatioType == EInformationType.inventarioContabil).WithMessage("InformatioType precisa ser 6 ou 7 ")
+                                                         .When(x => x.InformatioType != null);
 
             RuleFor(x => x).Cascade(CascadeMode.Continue).Must(x => x.BaseInventarioId > 0).WithMessage("Informe BaseInventarioId");
         }
@@ -34,8 +35,8 @@ namespace protecno.api.sync.domain.validations
         public InventoryValidation()
         {
             RuleFor(x => x).Cascade(CascadeMode.Continue).Must(x => x.BaseInventarioId > 0).WithMessage("Informe BaseInventarioId")
-                                                     .Must(x => x.TipoInventarioId > 0).WithMessage("Informe TipoInventarioId")
-                                                     .Must(x => Enum.IsDefined(typeof(EInventoryType), x.TipoInventarioId)).WithMessage("TipoInventarioId precisa estar entre 1 e 3")
+                                                     .Must(x => x.InformatioType > 0).WithMessage("Informe TipoInventarioId")
+                                                     .Must(x => x.InformatioType == EInformationType.inventarioFisico || x.InformatioType == EInformationType.inventarioContabil).WithMessage("InformatioType precisa ser 6 ou 7 ")
                                                      .Must(x => !string.IsNullOrEmpty(x.Codigo)).WithMessage("Informe Codigo")
                                                      .Must(x => !string.IsNullOrEmpty(x.Descricao)).WithMessage("Informe Descricao")
                                                      .Must(x => x.FilialId > 0).WithMessage("Filial não localizada");
@@ -120,10 +121,15 @@ namespace protecno.api.sync.domain.validations
     {
         public InventoryDeleteValidation()
         {
-            RuleFor(x => x).Cascade(CascadeMode.Continue).Must(x => x.BaseInventarioId > 0).WithMessage("Informe o BaseInventarioId")
-                                                         .Must(x => x.TipoInventarioId > 0).WithMessage("Informe o TipoInventarioId");
-            
-            RuleFor(x => x).Cascade(CascadeMode.Continue).Must(x => x.InventoryIdList.Count == 0).WithMessage("Desmarque 'DeleteAll' caso queira enviar uma lista de Ids ")
+            RuleFor(x => x).Cascade(CascadeMode.Continue).Must(x => x.BaseInventoryId > 0).WithMessage("Informe o BaseInventoryId");
+
+            RuleFor(x => x).Cascade(CascadeMode.Continue).Must(x => x.InventoryIdList.Count > 0).WithMessage("Informe a lista InventoryIdList que deseja excluir")
+                                                         .When(x => !x.DeleteAll);
+
+            RuleFor(x => x).Cascade(CascadeMode.Continue).Must(x => x.InformationType > 0).WithMessage("Informe o InventoryTypeId")
+                                                         .When(x => x.DeleteAll);
+
+            RuleFor(x => x).Cascade(CascadeMode.Continue).Must(x => x.InventoryIdList == null || x.InventoryIdList.Count == 0).WithMessage("Desmarque 'DeleteAll' caso queira enviar uma lista de Ids ")
                                                          .When(x => x.DeleteAll); 
         }
     }
